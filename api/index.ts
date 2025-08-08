@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../dist/app.module.js';
+import { AppModule } from '../src/app.module';
 
 let cachedExpressHandler: any | null = null;
 
