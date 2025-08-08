@@ -3,8 +3,8 @@ import { TikTokService } from '../tiktok/tiktok.service.js';
 import { FirebaseService } from '../firebase/firebase.service.js';
 import { UsersService, TikTokProfile, TikTokTokens } from '../users/users.service.js';
 
-const AUTH_REDIRECT_URI = 'https://registry.stg.reviz.dev/api/auth/tiktok';
-const CONNECT_REDIRECT_URI = 'https://registry.stg.reviz.dev/api/auth/connect/tiktok';
+const AUTH_REDIRECT_URI = process.env.AUTH_REDIRECT_URI || 'https://registry.stg.reviz.dev/api/auth/tiktok';
+const CONNECT_REDIRECT_URI = process.env.CONNECT_REDIRECT_URI || 'https://registry.stg.reviz.dev/api/auth/connect/tiktok';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +14,7 @@ export class AuthService {
     private readonly usersService: UsersService,
   ) {}
 
-  async handleTikTokSignIn(code: string): Promise<{ customToken: string }> {
+  async handleTikTokSignIn(code: string, computedRedirectUri?: string): Promise<{ customToken: string }> {
     const clientKey = process.env.TIKTOK_CLIENT_KEY as string;
     const clientSecret = process.env.TIKTOK_CLIENT_SECRET as string;
     if (!clientKey || !clientSecret) {
@@ -25,7 +25,7 @@ export class AuthService {
       code,
       clientKey,
       clientSecret,
-      redirectUri: AUTH_REDIRECT_URI,
+      redirectUri: computedRedirectUri ?? AUTH_REDIRECT_URI,
     });
 
     const profile = await this.tikTokService.fetchUserInfo(tokenResponse.access_token);
@@ -41,7 +41,7 @@ export class AuthService {
     return { customToken: firebaseCustomToken };
   }
 
-  async handleTikTokConnect(code: string, stateFirebaseIdToken: string): Promise<void> {
+  async handleTikTokConnect(code: string, stateFirebaseIdToken: string, computedRedirectUri?: string): Promise<void> {
     const clientKey = process.env.TIKTOK_CLIENT_KEY as string;
     const clientSecret = process.env.TIKTOK_CLIENT_SECRET as string;
     if (!clientKey || !clientSecret) {
@@ -56,7 +56,7 @@ export class AuthService {
       code,
       clientKey,
       clientSecret,
-      redirectUri: CONNECT_REDIRECT_URI,
+      redirectUri: computedRedirectUri ?? CONNECT_REDIRECT_URI,
     });
 
     const profile: TikTokProfile = await this.tikTokService.fetchUserInfo(tokenResponse.access_token);

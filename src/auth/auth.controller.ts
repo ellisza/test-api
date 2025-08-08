@@ -1,5 +1,5 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
-import { Response } from 'express';
+import { Controller, Get, Query, Res, Req } from '@nestjs/common';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service.js';
 
 @Controller('auth')
@@ -7,8 +7,12 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Get('tiktok')
-  async tiktokCallback(@Query('code') code: string, @Res() res: Response) {
-    const { customToken } = await this.authService.handleTikTokSignIn(code);
+  async tiktokCallback(@Query('code') code: string, @Res() res: Response, @Req() req: Request) {
+    const schemeHdr = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const base = `${schemeHdr}://${host}`;
+    const redirectUri = `${base}/api/auth/tiktok`;
+    const { customToken } = await this.authService.handleTikTokSignIn(code, redirectUri);
     const scheme = process.env.PUBLIC_APP_SCHEME || 'reviz';
     return res.redirect(`${scheme}://tikTok_auth/${encodeURIComponent(customToken)}`);
   }
@@ -19,8 +23,12 @@ export class AuthController {
   }
 
   @Get('connect/tiktok')
-  async tiktokConnect(@Query('code') code: string, @Query('state') stateIdToken: string, @Res() res: Response) {
-    await this.authService.handleTikTokConnect(code, stateIdToken);
+  async tiktokConnect(@Query('code') code: string, @Query('state') stateIdToken: string, @Res() res: Response, @Req() req: Request) {
+    const schemeHdr = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const base = `${schemeHdr}://${host}`;
+    const redirectUri = `${base}/api/auth/connect/tiktok`;
+    await this.authService.handleTikTokConnect(code, stateIdToken, redirectUri);
     const scheme = process.env.PUBLIC_APP_SCHEME || 'reviz';
     return res.redirect(`${scheme}://tiktok_connected`);
   }

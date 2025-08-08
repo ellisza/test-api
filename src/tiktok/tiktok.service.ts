@@ -33,15 +33,22 @@ export class TikTokService {
     body.set('grant_type', 'authorization_code');
     body.set('redirect_uri', redirectUri);
 
-    const { data } = await axios.post(this.tokenUrl, body.toString(), {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      timeout: 15000,
-    });
+    try {
+      const { data } = await axios.post(this.tokenUrl, body.toString(), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: 15000,
+        validateStatus: () => true,
+      });
 
-    if (!data?.access_token) {
-      throw new Error('TikTok token exchange failed');
+      if (!data?.access_token) {
+        const errMsg = typeof data === 'object' ? JSON.stringify(data) : String(data);
+        throw new Error(`TikTok token exchange failed: ${errMsg}`);
+      }
+      return data as TikTokTokenResponse;
+    } catch (e: any) {
+      const msg = e?.response?.data ? JSON.stringify(e.response.data) : e?.message || 'unknown_error';
+      throw new Error(`TikTok token exchange failed: ${msg}`);
     }
-    return data as TikTokTokenResponse;
   }
 
   async refreshAccessToken(refreshToken: string, clientKey: string, clientSecret: string): Promise<TikTokTokenResponse> {
