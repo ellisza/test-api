@@ -13,15 +13,15 @@ export class AuthController {
     return res.redirect(`${scheme}://tikTok_auth/${encodeURIComponent(customToken)}`);
   }
 
+  @Get('hello')
+  hello() {
+    return { ok: true };
+  }
+
   @Get('connect/tiktok')
   async tiktokConnect(@Query('code') code: string, @Query('state') stateIdToken: string, @Res() res: Response) {
     await this.authService.handleTikTokConnect(code, stateIdToken);
     const scheme = process.env.PUBLIC_APP_SCHEME || 'reviz';
     return res.redirect(`${scheme}://tiktok_connected`);
-  }
-  
-  @Get('hello')
-  hello() {
-    return 'i see you';
   }
 }
