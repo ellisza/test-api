@@ -19,4 +19,9 @@ export class AuthController {
     const scheme = process.env.PUBLIC_APP_SCHEME || 'reviz';
     return res.redirect(`${scheme}://tiktok_connected`);
   }
+  
+  @Get('hello')
+  hello() {
+    return 'i see you';
+  }
 }
