@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Res, Req } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service.js';
 
@@ -31,5 +31,17 @@ export class AuthController {
     await this.authService.handleTikTokConnect(code, stateIdToken, redirectUri);
     const scheme = process.env.PUBLIC_APP_SCHEME || 'reviz';
     return res.redirect(`${scheme}://tiktok_connected`);
+  }
+
+  @Post('firebase')
+  async firebaseExchange(@Body('code') code: string, @Req() req: Request) {
+    if (!code) {
+      throw new Error('Missing code');
+    }
+    const schemeHdr = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const base = `${schemeHdr}://${host}`;
+    const redirectUri = `${base}/api/auth/tiktok`;
+    return this.authService.handleFirebaseCodeExchange(code, redirectUri);
   }
 }
