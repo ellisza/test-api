@@ -43,7 +43,7 @@ export class UsersService {
 
   async upsertByTikTok(profile: TikTokProfile, tokens: TikTokTokens): Promise<UserRecord> {
     const existingUid = this.tiktokOpenIdToUid.get(profile.open_id);
-    const uid = existingUid ?? `ttk_${profile.open_id}`;
+    const uid = existingUid ?? this.generateUidFromDisplayName(profile.display_name, profile.open_id);
 
     const existing = this.uidToUser.get(uid);
     const user: UserRecord = {
@@ -90,5 +90,20 @@ export class UsersService {
     this.uidToUser.set(uid, updated);
     this.tiktokOpenIdToUid.set(profile.open_id, uid);
     return updated;
+  }
+
+  private generateUidFromDisplayName(displayName: string | undefined, openId: string): string {
+    const baseName = (displayName || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    let candidate = `ttk_${baseName || openId}`;
+    // Ensure not too long
+    if (candidate.length > 120) {
+      candidate = candidate.slice(0, 120);
+    }
+    // Avoid collision with a different user
+    if (this.uidToUser.has(candidate)) {
+      const suffix = `_${openId.slice(-6)}`;
+      candidate = `${candidate}${suffix}`.slice(0, 128);
+    }
+    return candidate;
   }
 }
