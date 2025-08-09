@@ -39,9 +39,13 @@ export class AuthService {
     // Upsert user by TikTok open_id
     const user = await this.usersService.upsertByTikTok(profile, tokenResponse);
 
-    // Issue Firebase custom token for unified UID
+    // Issue Firebase custom token for unified UID; update displayName/photo on Auth profile
     const firebaseCustomToken = await this.firebaseService.createCustomToken(user.uid, {
       provider: 'tiktok',
+    });
+    await this.firebaseService.updateUserProfile(user.uid, {
+      displayName: profile.display_name,
+      photoURL: profile.avatar_url,
     });
 
     return {
@@ -116,6 +120,41 @@ export class AuthService {
         open_id: profile.open_id,
         display_name: profile.display_name,
         avatar_url: profile.avatar_url,
+      },
+    };
+  }
+
+  /**
+   * Verifies a Firebase ID token from the mobile app and returns a backend session token plus user info
+   * in the wrapped format { data: { token, user } } that the Expo app expects.
+   */
+  async handleFirebaseIdTokenAuth(idToken: string): Promise<{
+    data: {
+      token: string;
+      user: { id: string; username: string; email: string; role: string; name: string; photoURL?: string };
+    };
+  }> {
+    const decoded = await this.firebaseService.verifyIdToken(idToken);
+    const uid = decoded.uid;
+
+    const user = this.usersService.getUserByUid(uid);
+    const displayName = user?.displayName || decoded.name || 'User';
+    const photoURL = user?.avatarUrl || (decoded as any).picture || undefined;
+
+    // For quick-launch, mint a placeholder backend token
+    const backendToken = `dev-${uid}-${Math.random().toString(36).slice(2)}`;
+
+    return {
+      data: {
+        token: backendToken,
+        user: {
+          id: uid,
+          username: displayName,
+          email: decoded.email || '',
+          role: 'user',
+          name: displayName,
+          photoURL,
+        },
       },
     };
   }

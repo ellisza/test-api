@@ -66,14 +66,10 @@ export class AuthController {
   }
 
   @Post('firebase')
-  async firebaseExchange(@Body('code') code: string, @Req() req: Request) {
-    if (!code) {
-      throw new Error('Missing code');
+  async firebaseExchange(@Body('idToken') idToken: string) {
+    if (!idToken) {
+      throw new Error('Missing idToken');
     }
-    const schemeHdr = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
-    const host = req.headers['x-forwarded-host'] || req.headers.host;
-    const base = `${schemeHdr}://${host}`;
-    const redirectUri = `${base}/api/auth/tiktok`;
-    return this.authService.handleFirebaseCodeExchange(code, redirectUri);
+    return this.authService.handleFirebaseIdTokenAuth(idToken);
   }
 }

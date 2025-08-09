@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { App, cert, getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth, DecodedIdToken } from 'firebase-admin/auth';
+import { getAuth, DecodedIdToken, UpdateRequest } from 'firebase-admin/auth';
 
 function getFirebaseAdminApp(): App {
   if (getApps().length > 0) {
@@ -39,5 +39,12 @@ export class FirebaseService {
 
   async verifyIdToken(idToken: string): Promise<DecodedIdToken> {
     return getAuth(this.app).verifyIdToken(idToken);
+  }
+
+  async updateUserProfile(uid: string, opts: { displayName?: string; photoURL?: string }): Promise<void> {
+    const update: UpdateRequest = {};
+    if (opts.displayName !== undefined) update.displayName = opts.displayName;
+    if (opts.photoURL !== undefined) update.photoURL = opts.photoURL;
+    await getAuth(this.app).updateUser(uid, update);
   }
 }
