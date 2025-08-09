@@ -39,13 +39,9 @@ export class AuthService {
     // Upsert user by TikTok open_id
     const user = await this.usersService.upsertByTikTok(profile, tokenResponse);
 
-    // Issue Firebase custom token for unified UID; update displayName/photo on Auth profile
+    // Issue Firebase custom token for unified UID (do not update Auth profile yet; user may not exist until client signs in)
     const firebaseCustomToken = await this.firebaseService.createCustomToken(user.uid, {
       provider: 'tiktok',
-    });
-    await this.firebaseService.updateUserProfile(user.uid, {
-      displayName: profile.display_name,
-      photoURL: profile.avatar_url,
     });
 
     return {
@@ -137,7 +133,16 @@ export class AuthService {
     const decoded = await this.firebaseService.verifyIdToken(idToken);
     const uid = decoded.uid;
 
-    const user = this.usersService.getUserByUid(uid);
+    let user = this.usersService.getUserByUid(uid);
+    // If user was deleted in Firebase and re-signed in, ensure our in-memory record exists
+    if (!user) {
+      user = { uid, providers: {} } as any;
+    }
+    // Best-effort profile sync after client is signed in (user exists in Firebase now)
+    await this.firebaseService.updateUserProfile(uid, {
+      displayName: (user && user.displayName) || decoded.name,
+      photoURL: (user && user.avatarUrl) || (decoded as any).picture,
+    });
     const displayName = user?.displayName || decoded.name || 'User';
     const photoURL = user?.avatarUrl || (decoded as any).picture || undefined;
 
