@@ -12,9 +12,15 @@ export class AuthController {
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const base = `${schemeHdr}://${host}`;
     const redirectUri = `${base}/api/auth/tiktok`;
-    const { customToken } = await this.authService.handleTikTokSignIn(code, redirectUri);
+    const { customToken, profile } = await this.authService.handleTikTokSignIn(code, redirectUri);
     const scheme = process.env.PUBLIC_APP_SCHEME || 'reviz';
-    return res.redirect(`${scheme}://tikTok_auth/${encodeURIComponent(customToken)}`);
+    const qp = new URLSearchParams({
+      token: customToken,
+      open_id: profile.open_id,
+      display_name: profile.display_name ?? '',
+      avatar_url: profile.avatar_url ?? '',
+    }).toString();
+    return res.redirect(`${scheme}://tikTok_auth?${qp}`);
   }
 
   @Get('hello')

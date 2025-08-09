@@ -14,7 +14,13 @@ export class AuthService {
     private readonly usersService: UsersService,
   ) {}
 
-  async handleTikTokSignIn(code: string, computedRedirectUri?: string): Promise<{ customToken: string }> {
+  async handleTikTokSignIn(
+    code: string,
+    computedRedirectUri?: string,
+  ): Promise<{
+    customToken: string;
+    profile: { open_id: string; display_name?: string; avatar_url?: string };
+  }> {
     const clientKey = process.env.TIKTOK_CLIENT_KEY as string;
     const clientSecret = process.env.TIKTOK_CLIENT_SECRET as string;
     if (!clientKey || !clientSecret) {
@@ -38,7 +44,14 @@ export class AuthService {
       provider: 'tiktok',
     });
 
-    return { customToken: firebaseCustomToken };
+    return {
+      customToken: firebaseCustomToken,
+      profile: {
+        open_id: profile.open_id,
+        display_name: profile.display_name,
+        avatar_url: profile.avatar_url,
+      },
+    };
   }
 
   async handleTikTokConnect(code: string, stateFirebaseIdToken: string, computedRedirectUri?: string): Promise<void> {
